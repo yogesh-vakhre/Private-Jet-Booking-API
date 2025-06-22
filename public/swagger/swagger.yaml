@@ -1,0 +1,1017 @@
+openapi: 3.0.0
+info:
+  title: Private Jet Booking API
+  description:  Develop a RESTful API using PHP and Laravel that allows users to book, view, and cancel private jet booking. The API should interact with a MySQL database to store and retrieve data.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api/v1
+ # - url: "{{ config('app.url') }}"
+    description: 'Localhost address'
+tags:
+  - name: Auth
+    description: Operations about Authentication
+
+  - name: User
+    description: Operations about Users
+
+  - name: Flight
+    description: Everything about your flight
+
+  - name: Booking
+    description: Everything about your booking
+
+paths:
+  /bookings:
+    get:
+      tags:
+        - Booking
+      summary: Get All Booking
+      description: Get all booking
+      operationId: getAllBooking
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search keyword (default empty string)
+        - in: query
+          name: pageIndex
+          schema:
+            type: integer
+            default: 0
+          description: Page index (default 0)
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 3
+          description: Page size (default 3)
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: id
+          description: Attribute to sort by (default 'id')
+        - in: query
+          name: sortDirection
+          schema:
+            type: string
+            default: ASC
+          description: Sort direction (default 'ASC')
+      responses:
+        '200':
+          description: Booking All Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Booking"
+        '401':
+          description: Unauthenticated
+        "500":
+          description: Error
+      security:
+        - bearerAuth: []
+
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register
+      description: This can only be done by the register team member.
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: User Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "4|eULVXBa0VRtYc6C3ND5rZe0rvvhO7cUHh83B52jO"
+                      user:
+                        $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthorized Access
+        '405':
+          description: Validation exception
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Logs user into the system
+      description: ''
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: 'johndoie@gmail.com'
+                password:
+                  type: string
+                  format: password
+                  example: 'johndoie@123'
+      responses:
+        '200':
+          description: User Logged In Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "4|eULVXBa0VRtYc6C3ND5rZe0rvvhO7cUHh83B52jO"
+                      user:
+                        $ref: "#/components/schemas/User"
+        '403':
+          description: Invalid login details
+        '404':
+          description: Validation exception
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logs out current logged in user session
+      description: ''
+      operationId: logoutUser
+      parameters: []
+      responses:
+        '200':
+          description: User Logged Out Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+
+      security:
+          - bearerAuth: []
+  /auth/user:
+    get:
+      tags:
+        - Auth
+      summary: Get current user logged in
+      description: ''
+      operationId: getUser
+      parameters: []
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+          - bearerAuth: []
+  /users:
+    get:
+      tags:
+        - User
+      summary: Get All Users
+      description: Get all users with their associated tasks and users
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: User All Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        "500":
+          description: Error
+      security:
+        - bearerAuth: []
+    post:
+        tags:
+          - User
+        summary: Add a new user to the store
+        description: Add a new user to the store
+        operationId: storeUser
+        requestBody:
+          description: Create a new User in the store
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  password:
+                    type: string
+                    format: password
+        responses:
+          '201':
+            description: User Created
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                    message:
+                      type: string
+                    data:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/User"
+          '401':
+            description: Unauthenticated
+          '404':
+            description: User not found
+          '405':
+            description: Validation exception
+        security:
+          - bearerAuth: []
+
+  /users/{id}:
+    get:
+      tags:
+        - User
+      summary: Find users by ID
+      description: Returns a single user
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          description: ID of user to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - User
+      summary: Update an existing User
+      description: Update an existing User by Id
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of User to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent user in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    patch:
+      tags:
+        - User
+      summary: Update an existing User
+      description: Update an existing User by Id
+      operationId: updatePatchUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of User to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent User in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - User
+      summary: Deletes a user
+      description: delete a user
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          description: User id to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+
+  /flights:
+    get:
+      tags:
+        - Flight
+      summary: Get All Flights
+      description: Get all flights with their associated
+      operationId: getAllFlight
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search keyword (default empty string)
+        - in: query
+          name: pageIndex
+          schema:
+            type: integer
+            default: 0
+          description: Page index (default 0)
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 3
+          description: Page size (default 3)
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: id
+          description: Attribute to sort by (default 'id')
+        - in: query
+          name: sortDirection
+          schema:
+            type: string
+            default: ASC
+          description: Sort direction (default 'ASC')
+      responses:
+        '200':
+          description: Flight All Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Flight"
+        '401':
+          description: Unauthenticated
+        "500":
+          description: Error
+      security:
+        - bearerAuth: []
+    post:
+        tags:
+          - Flight
+        summary: Book a new flight to the store
+        description: Book a new flight to the store
+        operationId: storeFlight
+        requestBody:
+          description: Book a new flight in the store
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  departure_time:
+                    type: string
+                    format: date-time
+                    description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 15:01:37)
+                  arrival_time:
+                    type: string
+                    format: date-time
+                    description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 16:01:37)
+                  price:
+                    type: string
+                    description: Price
+                    example: 1000
+        responses:
+          '201':
+            description: Flight Booked
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                    message:
+                      type: string
+                    data:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/Flight"
+          '401':
+            description: Unauthenticated
+          '404':
+            description: Flight not found
+          '405':
+            description: Validation exception
+        security:
+          - bearerAuth: []
+
+  /flights/{id}:
+    get:
+      tags:
+        - Flight
+      summary: Find flight by ID
+      description: Returns a single flight
+      operationId: getFlightById
+      parameters:
+        - name: id
+          in: path
+          description: ID of flight to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Flight Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Flight"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Flight not found
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Flight
+      summary: Update an existing Flight
+      description: Update an existing Flight by Id
+      operationId: updateFlight
+      parameters:
+        - name: id
+          in: path
+          description: ID of flight to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent flight in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                    type: string
+                to:
+                  type: string
+                departure_time:
+                  type: string
+                  format: date-time
+                  description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 15:01:37)
+                arrival_time:
+                  type: string
+                  format: date-time
+                  description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 16:01:37)
+                price:
+                  type: string
+                  description: Price
+                  example: 1000
+      responses:
+        '200':
+          description: Flight Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Flight"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Flight not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    patch:
+      tags:
+        - Flight
+      summary: Update an existing Flight
+      description: Update an existing Flight by Id
+      operationId: updatePatchFlight
+      parameters:
+        - name: id
+          in: path
+          description: ID of Flight to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent flight in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                to:
+                  type: string
+                departure_time:
+                  type: string
+                  format: date-time
+                  description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 15:01:37)
+                arrival_time:
+                  type: string
+                  format: date-time
+                  description: Datetime in format 'YYYY-MM-DD HH:MM:SS' (e.g. 2025-06-22 16:01:37)
+                price:
+                  type: string
+                  description: Price
+                  example: 1000
+      responses:
+        '200':
+          description: Flight Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Flight"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Flight not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - Flight
+      summary: Deletes a flight
+      description: delete a flight
+      operationId: deleteFlight
+      parameters:
+        - name: id
+          in: path
+          description: Flight id to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Flight Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Flight"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Flight not found
+      security:
+        - bearerAuth: []
+
+
+  /view-all-booking-user:
+    get:
+      tags:
+        - Booking
+      summary: View all booking for a user.
+      description: Returns a single user all booking
+      operationId: viewAllBookingUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of booking to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Booking"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Booking not found
+      security:
+        - bearerAuth: []
+
+  /cancel-booking-user/{bookingId}:
+    put:
+      tags:
+        - Booking
+      summary: Cancel an booking
+      description: Cancel an booking
+      operationId: cancelanBooking
+      parameters:
+        - name: id
+          in: path
+          description: ID of Booking
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+        '200':
+          description: Cancelled Booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Booking"
+        '404':
+          description: Booking not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+
+  /admin/report:
+    get:
+      tags:
+        - Booking
+      summary: View all booking report.
+      description: Returns all booking report
+      operationId: viewAllBookingReport
+      responses:
+        '200':
+          description: Booking Report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Booking Report not found
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        flight_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Status
+          example: confirmed
+          enum:
+            - confirmed
+            - cancelled
+            - pending
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Jon Doe
+        email:
+          type: string
+          format: email
+          example: john@email.com
+        email_verified_at:
+          type: string
+          format: date-time
+        password:
+          type: string
+          format: password
+          example: '12345'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      xml:
+        name: user
+
+    Flight:
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        from:
+          type: string
+          example: Surat
+        to:
+          type: string
+          example: Mumbai
+        departure_time:
+          type: string
+          format: date-time
+        arrival_time:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      xml:
+        name: flight
+  requestBodies:
+    flight:
+      description: Flight object that needs to be added to the store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Flight'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Flight'
+    UserArray:
+      description: List of user object
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
